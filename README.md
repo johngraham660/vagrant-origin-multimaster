@@ -1,0 +1,1 @@
+# vagrant-origin-multimaster
