@@ -1,0 +1,249 @@
+  -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = "2"
+
+#id_file='.vm_id'
+#if File.exist?(id_file) == false
+#   random_identifier = rand(100000).to_s + ".xip.io"
+#   File.open(id_file, 'w') { |file| file.write(random_identifier) }
+#end
+
+#virtualmachine_identifier = File.read(id_file)
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+  #config.vm.box = "rhel7.4"
+  config.vm.box = "centos/atomic-host"
+  config.vm.box_check_update = false
+  master1_docker_disk = "/var/vagrant/jgr78/.vagrant.d/disks/master1_docker_disk.vmdk"
+  master2_docker_disk = "/var/vagrant/jgr78/.vagrant.d/disks/master2_docker_disk.vmdk"
+  etcd1_docker_disk = "/var/vagrant/jgr78/.vagrant.d/disks/etcd1_docker_disk.vmdk"
+  etcd2_docker_disk = "/var/vagrant/jgr78/.vagrant.d/disks/etcd2_docker_disk.vmdk"
+  etcd3_docker_disk = "/var/vagrant/jgr78/.vagrant.d/disks/etcd3_docker_disk.vmdk"
+  infra1_docker_disk = "/var/vagrant/jgr78/.vagrant.d/disks/infra1_docker_disk.vmdk"
+  infra2_docker_disk = "/var/vagrant/jgr78/.vagrant.d/disks/infra2_docker_disk.vmdk"
+  infra3_docker_disk = "/var/vagrant/jgr78/.vagrant.d/disks/infra3_docker_disk.vmdk"
+
+  # Turn off shared folders
+  #config.vm.synced_folder ".", "/vagrant", id: "vagrant-root", disabled: true
+
+  # ===========================================================================
+  # Begin server: oso-ansible.xip.io
+  # ===========================================================================
+  config.vm.define "oso-ansible" do |ansible|
+    ansible.vm.hostname = "oso-ansible.xip.io"
+
+    ansible.vm.provider "virtualbox" do |v|
+        v.customize [ "modifyvm", :id, "--name", "oso-ansible.xip.io" ]
+        v.customize [ "modifyvm", :id, "--cpus", "1" ]
+        v.customize [ "modifyvm", :id, "--memory", "512" ]
+	v.customize [ "modifyvm", :id, "--natdnshostresolver1", "on"]
+	v.customize [ "modifyvm", :id, "--natdnsproxy1", "on"]
+    end
+
+    ansible.vm.network "private_network", ip: "192.168.205.10"
+
+    config.vm.provision "ansible_local" do |ansible|
+        ansible.playbook = "./provisioning/main.yml"
+        ansible.install_mode = "pip"
+        ansible.version = "2.4.2.0"
+    end
+
+  end
+  # ===========================================================================
+  # End server: oso-ansible.xip.io
+  # ===========================================================================
+
+
+  # ===========================================================================
+  # Begin server: oso-master1.xip.io
+  # ===========================================================================
+  config.vm.define "oso-master1" do |master1|
+    master1.vm.hostname = "master1.192.168.205.201.xip.io"
+
+    master1.vm.provider "virtualbox" do |v|
+        v.customize [ "modifyvm", :id, "--name", "oso-master1.xip.io" ]
+        v.customize [ "modifyvm", :id, "--cpus", "4" ]
+        v.customize [ "modifyvm", :id, "--memory", "4096" ]
+        v.customize [ "modifyvm", :id, "--natdnshostresolver1", "on"]
+        v.customize [ "modifyvm", :id, "--natdnsproxy1", "on"]
+        v.customize [ "createhd", "--filename", master1_docker_disk , "--size", 20 * 1024]
+        v.customize [ "storageattach", :id, "--storagectl", "IDE Controller", "--port", 1, "--device", 0, "--type", "hdd", "--medium", master1_docker_disk]
+    end
+
+    master1.vm.network "private_network", ip: "192.168.205.201"
+
+  end
+  # ===========================================================================
+  # End oso-master1.xip.io
+  # ===========================================================================
+
+  # ===========================================================================
+  # Begin server: oso-master2.xip.io
+  # ===========================================================================
+  config.vm.define "oso-master2" do |master2|
+    master2.vm.hostname = "master2.192.168.205.202.xip.io"
+
+    master2.vm.provider "virtualbox" do |v|
+        v.customize [ "modifyvm", :id, "--name", "oso-master2.xip.io" ]
+        v.customize [ "modifyvm", :id, "--cpus", "4" ]
+        v.customize [ "modifyvm", :id, "--memory", "4096" ]
+        v.customize [ "modifyvm", :id, "--natdnshostresolver1", "on"]
+        v.customize [ "modifyvm", :id, "--natdnsproxy1", "on"]
+        v.customize [ "createhd", "--filename", master2_docker_disk , "--size", 20 * 1024]
+        v.customize [ "storageattach", :id, "--storagectl", "IDE Controller", "--port", 1, "--device", 0, "--type", "hdd", "--medium", master2_docker_disk]
+    end
+
+    master2.vm.network "private_network", ip: "192.168.205.202"
+
+  end
+  # ===========================================================================
+  # End oso-master2.xip.io
+  # ===========================================================================
+
+
+  # ===========================================================================
+  # Begin server: oso-etcd1.xip.io
+  # ===========================================================================
+  config.vm.define "oso-etcd1" do |etcd1|
+    etcd1.vm.hostname = "etcd1.192.168.205.203.xip.io"
+
+    etcd1.vm.provider "virtualbox" do |v|
+        v.customize [ "modifyvm", :id, "--name", "oso-etcd1.xip.io" ]
+        v.customize [ "modifyvm", :id, "--cpus", "2" ]
+        v.customize [ "modifyvm", :id, "--memory", "4096" ]
+        v.customize [ "modifyvm", :id, "--natdnshostresolver1", "on"]
+        v.customize [ "modifyvm", :id, "--natdnsproxy1", "on"]
+        v.customize [ "createhd", "--filename", etcd1_docker_disk , "--size", 20 * 1024]
+        v.customize [ "storageattach", :id, "--storagectl", "IDE Controller", "--port", 1, "--device", 0, "--type", "hdd", "--medium", etcd1_docker_disk]
+    end
+
+    etcd1.vm.network "private_network", ip: "192.168.205.203"
+
+  end
+  # ===========================================================================
+  # End oso-etcd1.xip.io
+  # ===========================================================================
+
+
+  # ===========================================================================
+  # Begin server: oso-etcd2.xip.io
+  # ===========================================================================
+  config.vm.define "oso-etcd2" do |etcd2|
+    etcd2.vm.hostname = "etcd2.192.168.205.204.xip.io"
+
+    etcd2.vm.provider "virtualbox" do |v|
+        v.customize [ "modifyvm", :id, "--name", "oso-etcd2.xip.io" ]
+        v.customize [ "modifyvm", :id, "--cpus", "2" ]
+        v.customize [ "modifyvm", :id, "--memory", "4096" ]
+        v.customize [ "modifyvm", :id, "--natdnshostresolver1", "on"]
+        v.customize [ "modifyvm", :id, "--natdnsproxy1", "on"]
+        v.customize [ "createhd", "--filename", etcd2_docker_disk , "--size", 20 * 1024]
+        v.customize [ "storageattach", :id, "--storagectl", "IDE Controller", "--port", 1, "--device", 0, "--type", "hdd", "--medium", etcd2_docker_disk]
+    end
+
+    etcd2.vm.network "private_network", ip: "192.168.205.204"
+
+  end
+  # ===========================================================================
+  # End oso-etcd2.xip.io
+  # ===========================================================================
+
+
+  # ===========================================================================
+  # Begin server: oso-etcd3.xip.io
+  # ===========================================================================
+  config.vm.define "oso-etcd3" do |etcd3|
+    etcd3.vm.hostname = "etcd3.192.168.205.205.xip.io"
+
+    etcd3.vm.provider "virtualbox" do |v|
+        v.customize [ "modifyvm", :id, "--name", "oso-etcd3.xip.io" ]
+        v.customize [ "modifyvm", :id, "--cpus", "2" ]
+        v.customize [ "modifyvm", :id, "--memory", "4096" ]
+        v.customize [ "modifyvm", :id, "--natdnshostresolver1", "on"]
+        v.customize [ "modifyvm", :id, "--natdnsproxy1", "on"]
+        v.customize [ "createhd", "--filename", etcd3_docker_disk , "--size", 20 * 1024]
+        v.customize [ "storageattach", :id, "--storagectl", "IDE Controller", "--port", 1, "--device", 0, "--type", "hdd", "--medium", etcd3_docker_disk]
+    end
+
+    etcd3.vm.network "private_network", ip: "192.168.205.205"
+
+  end
+  # ===========================================================================
+  # End oso-etcd3.xip.io
+  # ===========================================================================
+
+
+  # ===========================================================================
+  # Begin server: oso-infra1.xip.io
+  # ===========================================================================
+  config.vm.define "oso-infra1" do |infra1|
+    infra1.vm.hostname = "infra1.192.168.205.206.xip.io"
+
+    infra1.vm.provider "virtualbox" do |v|
+        v.customize [ "modifyvm", :id, "--name", "oso-infra1.xip.io" ]
+        v.customize [ "modifyvm", :id, "--cpus", "4" ]
+        v.customize [ "modifyvm", :id, "--memory", "4096" ]
+        v.customize [ "modifyvm", :id, "--natdnshostresolver1", "on"]
+        v.customize [ "modifyvm", :id, "--natdnsproxy1", "on"]
+        v.customize [ "createhd", "--filename", infra1_docker_disk , "--size", 20 * 1024]
+        v.customize [ "storageattach", :id, "--storagectl", "IDE Controller", "--port", 1, "--device", 0, "--type", "hdd", "--medium", infra1_docker_disk]
+    end
+
+    infra1.vm.network "private_network", ip: "192.168.205.206"
+
+  end
+  # ===========================================================================
+  # End oso-infra1.xip.io
+  # ===========================================================================
+
+
+  # ===========================================================================
+  # Begin server: oso-infra2.xip.io
+  # ===========================================================================
+  config.vm.define "oso-infra2" do |infra2|
+    infra2.vm.hostname = "infra2.192.168.205.207.xip.io"
+
+    infra2.vm.provider "virtualbox" do |v|
+        v.customize [ "modifyvm", :id, "--name", "oso-infra2.xip.io" ]
+        v.customize [ "modifyvm", :id, "--cpus", "4" ]
+        v.customize [ "modifyvm", :id, "--memory", "4096" ]
+        v.customize [ "modifyvm", :id, "--natdnshostresolver1", "on"]
+        v.customize [ "modifyvm", :id, "--natdnsproxy1", "on"]
+        v.customize [ "createhd", "--filename", infra2_docker_disk , "--size", 20 * 1024]
+        v.customize [ "storageattach", :id, "--storagectl", "IDE Controller", "--port", 1, "--device", 0, "--type", "hdd", "--medium", infra2_docker_disk]
+    end
+
+    infra2.vm.network "private_network", ip: "192.168.205.207"
+
+  end
+  # ===========================================================================
+  # End oso-infra2.xip.io
+  # ===========================================================================
+
+
+  # ===========================================================================
+  # Begin server: oso-infra3.xip.io
+  # ===========================================================================
+  config.vm.define "oso-infra3" do |infra3|
+    infra3.vm.hostname = "infra3.192.168.205.208.xip.io"
+
+    infra3.vm.provider "virtualbox" do |v|
+        v.customize [ "modifyvm", :id, "--name", "oso-infra3.xip.io" ]
+        v.customize [ "modifyvm", :id, "--cpus", "4" ]
+        v.customize [ "modifyvm", :id, "--memory", "4096" ]
+        v.customize [ "modifyvm", :id, "--natdnshostresolver1", "on"]
+        v.customize [ "modifyvm", :id, "--natdnsproxy1", "on"]
+        v.customize [ "createhd", "--filename", infra3_docker_disk , "--size", 20 * 1024]
+        v.customize [ "storageattach", :id, "--storagectl", "IDE Controller", "--port", 1, "--device", 0, "--type", "hdd", "--medium", infra3_docker_disk]
+    end
+
+    infra3.vm.network "private_network", ip: "192.168.205.208"
+
+  end
+  # ===========================================================================
+  # End oso-infra3.xip.io
+  # ===========================================================================
+
+end

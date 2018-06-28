@@ -1,0 +1,96 @@
+# ===========================================================================
+# Create an OSEv3 group that contains the master, nodes, etcd, and lb groups.
+# The lb group lets Ansible configure HAProxy as the load balancing solution.
+# Comment lb out if your load balancer is pre-configured.
+# ===========================================================================
+[OSEv3:children]
+masters
+nodes
+etcd
+lb
+
+# ===========================================================================
+# Set variables common for all OSEv3 hosts
+# ===========================================================================
+[OSEv3:vars]
+ansible_ssh_user=vagrant
+ansible_become=true
+openshift_deployment_type=origin
+openshift_release=3.7
+openshift_image_tag=v3.7.1
+openshift_enable_service_catalog=false
+containerized=true
+
+
+
+# ===========================================================================
+# Uncomment the following to enable htpasswd authentication; defaults to
+# DenyAllPasswordIdentityProvider.
+# ===========================================================================
+openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider', 'filename': '/etc/origin/master/htpasswd'}]
+
+# ====================================================================
+# Native high availbility cluster method with optional load balancer.
+# If no lb group is defined installer assumes that a load balancer has
+# been preconfigured. For installation the value of
+# openshift_master_cluster_hostname must resolve to the load balancer
+# or to one or all of the masters defined in the inventory if no load
+# balancer is present.
+# ====================================================================
+openshift_master_cluster_method=native
+openshift_master_cluster_hostname=api.ocp.192.168.205.240.xip.io
+openshift_master_cluster_public_hostname=admin.ocp.192.168.205.240.xip.io
+
+# ===========================
+# apply updated node defaults
+# ===========================
+openshift_node_kubelet_args={'pods-per-core': ['10'], 'max-pods': ['250'], 'image-gc-high-threshold': ['90'], 'image-gc-low-threshold': ['80']}
+
+# =========================================
+# override the default controller lease ttl
+# =========================================
+#osm_controller_lease_ttl=30
+
+# ===============================================
+# enable ntp on masters to ensure proper failover
+# ===============================================
+openshift_clock_enabled=true
+
+# Dont check for these.
+openshift_disable_check=docker_image_availability,memory_availability,disk_availability
+
+# ======================
+# host group for masters
+# ======================
+[masters]
+master1.192.168.205.201.xip.io openshift_hostname=master1.192.168.205.201.xip.io openshift_ip=192.168.205.201 openshift_schedulable=false openshift_node_labels="{'logging-infra-fluentd':'true'}"
+master2.192.168.205.202.xip.io openshift_hostname=master2.192.168.205.202.xip.io openshift_ip=192.168.205.202 openshift_schedulable=false openshift_node_labels="{'logging-infra-fluentd':'true'}"
+
+# ======================
+# host group for etcd
+# ======================
+[etcd]
+etcd1.192.168.205.203.xip.io openshift_hostname=etcd1.192.168.205.203.xip.io openshift_ip=192.168.205.203
+etcd2.192.168.205.204.xip.io openshift_hostname=etcd2.192.168.205.204.xip.io openshift_ip=192.168.205.204
+etcd3.192.168.205.205.xip.io openshift_hostname=etcd2.192.168.205.205.xip.io openshift_ip=192.168.205.205
+
+# ====================
+# host group for Infra
+# ====================
+[infra]
+infra1.192.168.205.206.xip.io openshift_hostname=infra1.192.168.205.206.xip.io openshift_ip=192.168.205.206 2penshift_node_labels="{'region':'infra','logging-infra-fluentd':'true', 'logging-node': '1'}"
+infra2.192.168.205.207.xip.io openshift_hostname=infra2.192.168.205.207.xip.io openshift_ip=192.168.205.207 openshift_node_labels="{'region':'infra','logging-infra-fluentd':'true', 'logging-node': '2'}"
+infra3.192.168.205.208.xip.io openshift_hostname=infra3.192.168.205.208.xip.io openshift_ip=192.168.205.208 openshift_node_labels="{'region':'infra','logging-infra-fluentd':'true', 'logging-node': '3'}"
+
+# ==========================
+# Specify load balancer host
+# ==========================
+[lb]
+
+[nodes]
+master1.192.168.205.201.xip.io
+master2.192.168.205.202.xip.io
+infra1.192.168.205.206.xip.io
+infra2.192.168.205.207.xip.io
+infra3.192.168.205.208.xip.io
+
